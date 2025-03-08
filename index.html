@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creative Coding & Generative AI Portfolio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        :root {
+            --primary: #6200EA;
+            --secondary: #03DAC6;
+            --dark: #121212;
+            --light: #FFFFFF;
+            --accent: #FF4081;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark);
+            color: var(--light);
+            overflow-x: hidden;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        header {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .title {
+            font-size: 4rem;
+            font-weight: 800;
+            text-align: center;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            opacity: 0.8;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .scroll-down {
+            position: absolute;
+            bottom: 2rem;
+            font-size: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .arrow-down {
+            width: 20px;
+            height: 20px;
+            border-right: 3px solid var(--secondary);
+            border-bottom: 3px solid var(--secondary);
+            transform: rotate(45deg);
+            margin-top: 0.5rem;
+        }
+        
+        .projects-container {
+            padding: 5rem 2rem;
+        }
+        
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 3rem;
+            text-align: center;
+            color: var(--secondary);
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .project-card {
+            background: rgba(30, 30, 30, 0.7);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border-top: 4px solid var(--primary);
+        }
+        
+        .project-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(98, 0, 234, 0.4);
+        }
+        
+        .project-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .project-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .project-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+        
+        .project-desc {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            opacity: 0.9;
+            flex-grow: 1;
+        }
+        
+        .project-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: auto;
+        }
+        
+        .project-link {
+            padding: 0.6rem 1.2rem;
+            background: var(--primary);
+            color: var(--light);
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: background 0.3s;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .project-link:hover {
+            background: var(--accent);
+        }
+        
+        footer {
+            padding: 2rem;
+            text-align: center;
+            background: rgba(20, 20, 20, 0.7);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .footer-text {
+            opacity: 0.7;
+            font-size: 0.9rem;
+        }
+        
+        /* Project Pane Styles */
+        .project-pane-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .project-pane-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .project-pane {
+            width: 80%;
+            height: 80%;
+            background-color: var(--dark);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(98, 0, 234, 0.6);
+            resize: both;
+            min-width: 400px;
+            min-height: 300px;
+            max-width: 95%;
+            max-height: 95%;
+        }
+        
+        .project-pane-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: var(--primary);
+            color: var(--light);
+            cursor: move;
+        }
+        
+        .project-pane-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .project-pane-controls {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .pane-control {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s;
+        }
+        
+        .pane-control:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .pane-control.minimize-btn::after {
+            content: '';
+            width: 10px;
+            height: 2px;
+            background-color: var(--light);
+        }
+        
+        .pane-control.maximize-btn::after {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--light);
+            box-sizing: border-box;
+        }
+        
+        .pane-control.close-btn::after,
+        .pane-control.close-btn::before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 2px;
+            background-color: var(--light);
+        }
+        
+        .pane-control.close-btn::after {
+            transform: rotate(45deg);
+        }
+        
+        .pane-control.close-btn::before {
+            transform: rotate(-45deg);
+        }
+        
+        .project-pane-content {
+            flex-grow: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .project-pane-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nwse-resize;
+        }
+        
+        .resize-handle::after {
+            content: '';
+            position: absolute;
+            right: 5px;
+            bottom: 5px;
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid var(--secondary);
+            border-bottom: 2px solid var(--secondary);
+        }
+        
+        .minimized {
+            position: fixed;
+            bottom: 20px;
+            height: 40px !important;
+            width: 200px !important;
+            overflow: hidden;
+            resize: none;
+        }
+        
+        .minimized .project-pane-content {
+            display: none;
+        }
+        
+        .minimized-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1001;
+        }
+        
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .project-pane {
+                width: 95%;
+                height: 80%;
+                min-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <header>
+        <h1 class="title">Creative Coding & Generative AI</h1>
+        <p class="subtitle">Exploring the intersection of creativity, code, and artificial intelligence</p>
+        <div class="scroll-down" onclick="document.querySelector('.projects-container').scrollIntoView({behavior: 'smooth'})">
+            <span>View Projects</span>
+            <div class="arrow-down"></div>
+        </div>
+    </header>
+    
+    <section class="projects-container">
+        <h2 class="section-title">Featured Projects</h2>
+        <div class="projects-grid">
+            <!-- Project 1 -->
+            <div class="project-card">
+                <div class="project-img" style="background-image: url('neon.webp');"></div>
+                <div class="project-content">
+                    <h3 class="project-title">ML5.js American Sign Language Translator</h3>
+                    <p class="project-desc">An interactive application that uses machine learning to recognize and translate American Sign Language gestures in real-time. Built with ML5.js and TensorFlow.js.</p>
+                    <div class="project-links">
+                        <a class="project-link demo-link" data-url="https://editor.p5js.org/abdulf/sketches/VvgG6-z9U" data-title="ML5.js American Sign Language Translator">Live Demo</a>
+                        <a href="YOUR_GITHUB_REPO_URL_FOR_ASL_TRANSLATOR" class="project-link" target="_blank">GitHub</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project 2 -->
+            <div class="project-card">
+                <div class="project-img" style="background-image: url('Escape-Rooms-1920x841-2.jpg');"></div>
+                <div class="project-content">
+                    <h3 class="project-title">P5.js Escape the Room</h3>
+                    <p class="project-desc">An immersive escape room experience built with P5.js. Solve puzzles, find clues, and unlock the mysteries to escape from the virtual room.</p>
+                    <div class="project-links">
+                        <a class="project-link demo-link" data-url="https://fabdul-rah.github.io/P5-Game/" data-title="P5.js Escape the Room">Live Demo</a>
+                        <a href="https://github.com/fabdul-rah/P5-Game" class="project-link" target="_blank">GitHub</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project 3 -->
+            <div class="project-card">
+                <div class="project-img" style="background-image: url('text-gen.png');"></div>
+                <div class="project-content">
+                    <h3 class="project-title">Text Generator</h3>
+                    <p class="project-desc">A creative text generation tool using natural language processing techniques. Generate poems, stories, or other creative text based on customizable prompts.</p>
+                    <div class="project-links">
+                        <a class="project-link demo-link" data-url="https://fabdul-rah.github.io/Text-Generator/" data-title="Text Generator">Live Demo</a>
+                        <a href="https://github.com/fabdul-rah/Text-Generator" class="project-link" target="_blank">GitHub</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Project 4 -->
+            <div class="project-card">
+                <div class="project-img" style="background-image: url('Cover.jpg');"></div>
+                <div class="project-content">
+                    <h3 class="project-title">INFORM7: Personal Trainer</h3>
+                    <p class="project-desc">An interactive fiction experience created with INFORM7 that simulates a personal training session with adaptive responses and customized workout routines.</p>
+                    <div class="project-links">
+                        <a class="project-link demo-link" data-url="https://fabdul-rah.github.io/Interactive-Fiction/" data-title="INFORM7: Personal Trainer">Live Demo</a>
+                        <a href="https://github.com/fabdul-rah/Interactive-Fiction" class="project-link" target="_blank">GitHub</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <p class="footer-text">© 2025 Creative Coding & Generative AI Portfolio</p>
+    </footer>
+    
+    <!-- Project Pane Container (no default pane) -->
+    <div class="project-pane-overlay" id="pane-overlay"></div>
+    
+    <div class="minimized-container" id="minimized-container"></div>
+    
+    <script>
+        // Creative background animation with p5.js
+        let particles = [];
+        
+        function setup() {
+            const canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('canvas-container');
+            
+            // Create initial particles
+            for (let i = 0; i < 100; i++) {
+                particles.push(createParticle());
+            }
+        }
+        
+        function draw() {
+            clear();
+            
+            // Update and display particles
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.move();
+                p.display();
+                
+                // Create connections between particles
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let d = dist(p.x, p.y, p2.x, p2.y);
+                    
+                    if (d < 150) {
+                        stroke(98, 0, 234, map(d, 0, 150, 100, 0));
+                        line(p.x, p.y, p2.x, p2.y);
+                    }
+                }
+                
+                // Replace particles that go off-screen
+                if (p.isOffScreen()) {
+                    particles[i] = createParticle();
+                }
+            }
+        }
+        
+        function createParticle() {
+            return {
+                x: random(width),
+                y: random(height),
+                size: random(3, 8),
+                speedX: random(-0.5, 0.5),
+                speedY: random(-0.5, 0.5),
+                color: [
+                    color(98, 0, 234),  // Primary
+                    color(3, 218, 198), // Secondary
+                    color(255, 64, 129) // Accent
+                ][floor(random(3))],
+                
+                move: function() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                },
+                
+                display: function() {
+                    noStroke();
+                    fill(this.color);
+                    ellipse(this.x, this.y, this.size);
+                },
+                
+                isOffScreen: function() {
+                    return (
+                        this.x < -this.size ||
+                        this.x > width + this.size ||
+                        this.y < -this.size ||
+                        this.y > height + this.size
+                    );
+                }
+            };
+        }
+        
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+        
+        // Project Pane Implementation
+        document.addEventListener('DOMContentLoaded', () => {
+            const paneOverlay = document.getElementById('pane-overlay');
+            const minimizedContainer = document.getElementById('minimized-container');
+            
+            // Track active panes
+            const activePanes = new Map();
+            let nextPaneId = 1;
+            
+            // Demo links
+            const demoLinks = document.querySelectorAll('.demo-link');
+            demoLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const url = this.getAttribute('data-url');
+                    const title = this.getAttribute('data-title');
+                    openProjectPane(url, title);
+                });
+            });
+            
+            function openProjectPane(url, title) {
+                // Create a new pane instance
+                const paneId = `pane-${nextPaneId++}`;
+                
+                // Create pane elements from scratch instead of cloning template
+                const newPane = document.createElement('div');
+                newPane.id = paneId;
+                newPane.className = 'project-pane';
+                
+                // Create pane header
+                const header = document.createElement('div');
+                header.className = 'project-pane-header';
+                
+                const titleElement = document.createElement('div');
+                titleElement.className = 'project-pane-title';
+                titleElement.textContent = title;
+                
+                const controls = document.createElement('div');
+                controls.className = 'project-pane-controls';
+                
+                const minimizeButton = document.createElement('div');
+                minimizeButton.className = 'pane-control minimize-btn';
+                
+                const maximizeButton = document.createElement('div');
+                maximizeButton.className = 'pane-control maximize-btn';
+                
+                const closeButton = document.createElement('div');
+                closeButton.className = 'pane-control close-btn';
+                
+                controls.appendChild(minimizeButton);
+                controls.appendChild(maximizeButton);
+                controls.appendChild(closeButton);
+                
+                header.appendChild(titleElement);
+                header.appendChild(controls);
+                
+                // Create content area
+                const content = document.createElement('div');
+                content.className = 'project-pane-content';
+                
+                const iframe = document.createElement('iframe');
+                iframe.className = 'project-pane-iframe';
+                iframe.src = url;
+                
+                content.appendChild(iframe);
+                
+                // Create resize handle
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'resize-handle';
+                
+                // Assemble pane
+                newPane.appendChild(header);
+                newPane.appendChild(content);
+                newPane.appendChild(resizeHandle);
+                
+                // Get header for drag functionality
+                const paneHeader = newPane.querySelector('.project-pane-header');
+                
+                // Position the pane randomly within viewport bounds
+                const maxX = window.innerWidth - 400;
+                const maxY = window.innerHeight - 300;
+                const randomX = Math.max(20, Math.floor(Math.random() * maxX));
+                const randomY = Math.max(20, Math.floor(Math.random() * maxY));
+                
+                newPane.style.position = 'absolute';
+                newPane.style.left = `${randomX}px`;
+                newPane.style.top = `${randomY}px`;
+                
+                // Initialize drag functionality
+                initDrag(newPane, paneHeader);
+                
+                // Initialize resize functionality
+                initResize(newPane, newPane.querySelector('.resize-handle'));
+                
+                // Add event listeners for controls
+                const minimizeBtn = newPane.querySelector('.minimize-btn');
+                const maximizeBtn = newPane.querySelector('.maximize-btn');
+                const closeBtn = newPane.querySelector('.close-btn');
+                
+                minimizeBtn.addEventListener('click', () => {
+                    minimizePane(newPane, title, paneId);
+                });
+                
+                maximizeBtn.addEventListener('click', () => {
+                    if (newPane.classList.contains('maximized')) {
+                        // Restore to previous size
+                        newPane.classList.remove('maximized');
+                        newPane.style.width = newPane.dataset.prevWidth;
+                        newPane.style.height = newPane.dataset.prevHeight;
+                        newPane.style.left = newPane.dataset.prevLeft;
+                        newPane.style.top = newPane.dataset.prevTop;
+                    } else {
+                        // Save current size and position
+                        newPane.dataset.prevWidth = newPane.style.width;
+                        newPane.dataset.prevHeight = newPane.style.height;
+                        newPane.dataset.prevLeft = newPane.style.left;
+                        newPane.dataset.prevTop = newPane.style.top;
+                        
+                        // Maximize
+                        newPane.classList.add('maximized');
+                        newPane.style.width = '90%';
+                        newPane.style.height = '90%';
+                        newPane.style.left = '5%';
+                        newPane.style.top = '5%';
+                    }
+                });
+                
+                closeBtn.addEventListener('click', () => {
+                    paneOverlay.removeChild(newPane);
+                    activePanes.delete(paneId);
+                    
+                    // If no more panes, hide overlay
+                    if (activePanes.size === 0) {
+                        paneOverlay.classList.remove('active');
+                    }
+                    
+                    // Remove from minimized container if it exists there
+                    const minimizedPane = document.getElementById(`min-${paneId}`);
+                    if (minimizedPane) {
+                        minimizedContainer.removeChild(minimizedPane);
+                    }
+                });
+                
+                // Add to DOM and map
+                paneOverlay.appendChild(newPane);
+                activePanes.set(paneId, newPane);
+                paneOverlay.classList.add('active');
+            }
+            
+            function minimizePane(pane, title, paneId) {
+                // Create minimized version
+                const minPane = document.createElement('div');
+                minPane.id = `min-${paneId}`;
+                minPane.classList.add('project-pane', 'minimized');
+                
+                const minHeader = document.createElement('div');
+                minHeader.classList.add('project-pane-header');
+                
+                const minTitle = document.createElement('div');
+                minTitle.classList.add('project-pane-title');
+                minTitle.textContent = title;
+                
+                const minControls = document.createElement('div');
+                minControls.classList.add('project-pane-controls');
+                
+                const restoreBtn = document.createElement('div');
+                restoreBtn.classList.add('pane-control', 'maximize-btn');
+                
+                const closeMinBtn = document.createElement('div');
+                closeMinBtn.classList.add('pane-control', 'close-btn');
+                
+                minControls.appendChild(restoreBtn);
+                minControls.appendChild(closeMinBtn);
+                minHeader.appendChild(minTitle);
+                minHeader.appendChild(minControls);
+                minPane.appendChild(minHeader);
+                
+                minimizedContainer.appendChild(minPane);
+                
+                // Hide original pane
+                pane.style.display = 'none';
+                
+                // Add event listeners
+                restoreBtn.addEventListener('click', () => {
+                    // Show original pane
+                    pane.style.display = 'flex';
+                    // Remove minimized version
+                    minimizedContainer.removeChild(minPane);
+                });
+                
+                closeMinBtn.addEventListener('click', () => {
+                    // Remove original pane
+                    paneOverlay.removeChild(pane);
+                    activePanes.delete(paneId);
+                    
+                    // Remove minimized version
+                    minimizedContainer.removeChild(minPane);
+                    
+                    // If no more panes, hide overlay
+                    if (activePanes.size === 0) {
+                        paneOverlay.classList.remove('active');
+                    }
+                });
+                
+                // Make minimized pane draggable
+                initDrag(minPane, minHeader);
+            }
+            
+            function initDrag(element, handle) {
+                let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+                
+                handle.onmousedown = dragMouseDown;
+                
+                function dragMouseDown(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    // Get mouse position at startup
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    document.onmouseup = closeDragElement;
+                    // Call function when mouse moves
+                    document.onmousemove = elementDrag;
+                    
+                    // Bring pane to front
+                    const allPanes = document.querySelectorAll('.project-pane');
+                    allPanes.forEach(pane => {
+                        pane.style.zIndex = '1';
+                    });
+                    element.style.zIndex = '10';
+                }
+                
+                function elementDrag(e) {
+                    e = e || window.event;
+                    e.preventDefault();
+                    // Calculate new position
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    // Set element's new position
+                    element.style.top = (element.offsetTop - pos2) + "px";
+                    element.style.left = (element.offsetLeft - pos1) + "px";
+                }
+                
+                function closeDragElement() {
+                    // Stop moving when mouse released
+                    document.onmouseup = null;
+                    document.onmousemove = null;
+                }
+            }
+            
+            function initResize(element, handle) {
+                handle.addEventListener('mousedown', initDrag);
+                
+                function initDrag(e) {
+                    e.preventDefault();
+                    window.addEventListener('mousemove', resize);
+                    window.addEventListener('mouseup', stopResize);
+                }
+                
+                function resize(e) {
+                    const width = e.clientX - element.getBoundingClientRect().left;
+                    const height = e.clientY - element.getBoundingClientRect().top;
+                    
+                    if (width > 200 && height > 150) {
+                        element.style.width = width + 'px';
+                        element.style.height = height + 'px';
+                    }
+                }
+                
+                function stopResize() {
+                    window.removeEventListener('mousemove', resize);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
